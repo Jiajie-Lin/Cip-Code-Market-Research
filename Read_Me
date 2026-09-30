@@ -1,0 +1,45 @@
+# CIP Code Competitor & Pricing Tool
+
+An interactive web dashboard for analyzing institutional competitor data, award levels, and pricing metrics using official IPEDS datasets.
+
+## Data Source & Methodology
+
+The data used in this application is sourced directly from the **Integrated Postsecondary Education Data System (IPEDS)**, maintained by the **National Center for Education Statistics (NCES)**.
+
+* **Source Authority:** [NCES IPEDS Data Center](https://nces.ed.gov/ipeds/use-the-data)
+* **Survey Components Used:**
+  * **Completions (`C2024_A`):** Programs, CIP codes, award levels, and completion counts.
+  * **Institutional Characteristics (`HD2024`):** Educational institution directory, location coordinates, sector classification, and Core Based Statistical Area (CBSA).
+  * **Student Charges & Costs (`COST1_2024`):** Tuition, fees, and institutional pricing structure.
+
+---
+
+## Annual Data Update Guide
+
+To update this tool for a new academic or reporting year:
+
+1. **Download New IPEDS Survey Files:**
+   * Visit the [NCES IPEDS Complete Data Files](https://nces.ed.gov/ipeds/use-the-data) portal.
+   * Download the latest complete data files for **Completions**, **Institutional Characteristics**, and **Academic Year Charges**.
+
+2. **Place Files in Working Directory:**
+   * Extract the downloaded datasets into folders matching your setup (e.g., `c2025_a`, `hd2025`, `cost1_2025`).
+
+3. **Update `build_data.py` References:**
+   * Open `build_data.py`.
+   * Update the input filenames or file paths to point to the new year's CSV files (e.g., change `c2024_a.csv` to `c2025_a.csv`).
+
+4. **Regenerate the Data Package:**
+   * Run the script to create the updated JSON payload:
+     ```bash
+     python build_data.py
+     ```
+
+5. **Deploy Updates:**
+   * Commit and push the regenerated `data/ipeds_data.json` file to GitHub to update the live dashboard automatically.
+
+---
+
+## Web Application
+
+The front-end interface (`index.html`) loads the lightweight `data/ipeds_data.json` package to enable instant client-side filtering by CIP code, state, CBSA, award level, and institution proximity.
