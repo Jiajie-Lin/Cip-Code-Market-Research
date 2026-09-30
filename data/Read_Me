@@ -1,1 +1,23 @@
+# CIP Code Competitor & Pricing Tool
 
+An interactive web dashboard for analyzing institutional competitor data, award levels, and pricing metrics using official IPEDS datasets.
+
+## Data Source & Methodology
+
+The data used in this application is sourced directly from the **Integrated Postsecondary Education Data System (IPEDS)**, maintained by the **National Center for Education Statistics (NCES)**.
+
+* **Source Authority:** [NCES IPEDS Data Center](https://nces.ed.gov/ipeds/use-the-data)
+* **Survey Components Used:**
+  * **Completions (`C2024_A`):** Programs, CIP codes, award levels, and completion counts.
+  * **Institutional Characteristics (`HD2024`):** Educational institution directory, location coordinates, sector classification, and Core Based Statistical Area (CBSA).
+  * **Student Charges & Costs (`COST1_2024`):** Tuition, fees, and institutional pricing structure.
+
+## Local Data Generation
+
+Raw IPEDS CSV files are excluded from this repository due to file size limits. To regenerate the processed dataset (`data/ipeds_data.json`) locally:
+
+1. Download the raw CSV survey files from the NCES IPEDS Data Center.
+2. Place the dataset folders (`c2024_a`, `hd2024`, `cost1_2024`) in the project root directory.
+3. Run the processing script:
+   ```bash
+   python build_data.py
