@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIP Code Competitor &amp; Pricing Tool</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f1f5f9;
+  color: #1e293b;
+  min-height: 100vh;
+}
+
+.site-header {
+  background: #0f172a;
+  color: white;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.site-header h1 { font-size: 1.15rem; font-weight: 600; letter-spacing: -.01em; }
+.data-badge {
+  font-size: .72rem;
+  background: rgba(255,255,255,.12);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+main { max-width: 1500px; margin: 0 auto; padding: 24px; }
+
+/* ── Search card ── */
+.search-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  margin-bottom: 20px;
+}
+.filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-size: .73rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.ac-wrap { position: relative; flex: 1; min-width: 90px; }
+
+.chip-input-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  min-height: 42px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 5px 10px;
+  min-width: 280px;
+  max-width: 560px;
+  background: white;
+  cursor: text;
+  transition: border-color .15s, box-shadow .15s;
+}
+.chip-input-box:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 5px;
+  padding: 3px 6px 3px 9px;
+  font-size: .78rem;
+  font-weight: 700;
+  font-family: monospace;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.chip-x {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #93c5fd;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  transition: color .1s;
+}
+.chip-x:hover { color: #1e40af; }
+#cip-input {
+  border: none;
+  outline: none;
+  height: 28px;
+  min-width: 90px;
+  flex: 1;
+  font-size: .9rem;
+  background: transparent;
+  color: #0f172a;
+  padding: 0 4px;
+}
+
+.filter-row select {
+  height: 42px;
+  min-width: 150px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: .88rem;
+  outline: none;
+  color: #1e293b;
+  background: white;
+  cursor: pointer;
+  transition: border-color .15s;
+  appearance: auto;
+}
+.filter-row select:focus { border-color: #2563eb; }
+
+/* ── Autocomplete ── */
+.ac-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 360px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.12);
+  z-index: 200;
+}
+.ac-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  border-bottom: 1px solid #f8fafc;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.active { background: #eff6ff; }
+.ac-item.ac-group { background: #faf5ff; border-bottom: 2px solid #e2e8f0; }
+.ac-item.ac-group:hover, .ac-item.ac-group.active { background: #ede9fe; }
+.ac-item.ac-group .ac-code { color: #6d28d9; }
+.ac-code { font-weight: 600; font-family: monospace; color: #1d4ed8; min-width: 72px; font-size: .88rem; }
+.ac-series { color: #64748b; font-size: .8rem; }
+.ac-hint { padding: 10px 14px; color: #94a3b8; font-size: .82rem; }
+
+/* ── Status messages ── */
+.loading-msg {
+  text-align: center;
+  padding: 48px;
+  color: #64748b;
+  font-size: .95rem;
+}
+.spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.welcome {
+  text-align: center;
+  padding: 64px 24px;
+  color: #94a3b8;
+}
+.welcome h2 { font-size: 1.05rem; color: #64748b; margin-bottom: 8px; font-weight: 500; }
+.welcome p { font-size: .87rem; }
+
+/* ── Stats row ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.stat-val {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+.stat-lbl {
+  font-size: .7rem;
+  color: #94a3b8;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 600;
+}
+
+/* ── Results header ── */
+.results-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.results-hdr h2 { font-size: .9rem; font-weight: 600; color: #64748b; }
+
+.export-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  padding: 8px 15px;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  letter-spacing: .01em;
+}
+.export-btn:hover { background: #1d4ed8; }
+
+/* ── Table ── */
+.table-wrap {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  overflow: hidden;
+}
+.table-scroll { max-height: 620px; overflow-y: auto; overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+
+thead th {
+  background: #1e293b;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 11px 14px;
+  text-align: left;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  user-select: none;
+}
+thead th.sortable { cursor: pointer; }
+thead th.sortable:hover { color: #e2e8f0; }
+thead th.num { text-align: right; }
+
+.sort-icon::after { content: ' ↕'; opacity: .35; font-size: .65rem; }
+th.sort-asc  .sort-icon::after { content: ' ↑'; opacity: 1; color: #60a5fa; }
+th.sort-desc .sort-icon::after { content: ' ↓'; opacity: 1; color: #60a5fa; }
+
+tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .08s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #f8fafc; }
+
+tbody td { padding: 11px 14px; vertical-align: middle; }
+tbody td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: 'Courier New', monospace;
+  font-size: .82rem;
+}
+
+.inst-name { font-weight: 500; color: #0f172a; line-height: 1.35; }
+.loc-text { font-size: .78rem; color: #64748b; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block;
+  font-size: .69rem;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  letter-spacing: .02em;
+}
+.badge-pub  { background: #dbeafe; color: #1d4ed8; }
+.badge-np   { background: #ede9fe; color: #6d28d9; }
+.badge-fp   { background: #fef3c7; color: #b45309; }
+.badge-unk  { background: #f1f5f9; color: #64748b; }
+.badge-lvl  { background: #f1f5f9; color: #475569; margin: 2px 2px 2px 0; }
+.badge-cip  { background: #ecfdf5; color: #065f46; margin: 2px 2px 2px 0; font-family: monospace; }
+.levels-td  { max-width: 200px; }
+.prog-col   { display: none; max-width: 190px; }
+
+.null-val { color: #cbd5e1; font-size: .78rem; }
+
+.empty-state {
+  text-align: center;
+  padding: 56px;
+  color: #94a3b8;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  font-size: .9rem;
+}
+
+@media (max-width: 768px) {
+  main { padding: 12px; }
+  .site-header { padding: 14px 16px; }
+  .filter-row { flex-direction: column; }
+  #cip-input { width: 100%; }
+  .filter-row select { width: 100%; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>CIP Code Competitor &amp; Pricing Tool</h1>
+  <span class="data-badge" id="year-badge">IPEDS</span>
+</header>
+
+<main>
+  <div class="search-card">
+    <div class="filter-row">
+      <div class="field">
+        <label for="cip-input">CIP Code</label>
+        <div class="chip-input-box" id="chip-box">
+          <div class="ac-wrap">
+            <input type="text" id="cip-input" placeholder="Add CIP code…" autocomplete="off" spellcheck="false">
+            <div id="ac-dropdown" class="ac-dropdown" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="filter-level">Award Level</label>
+        <select id="filter-level"><option value="">All Award Levels</option></select>
+      </div>
+      <div class="field">
+        <label for="filter-sector">Sector</label>
+        <select id="filter-sector">
+          <option value="">All Sectors</option>
+          <option value="1">Public</option>
+          <option value="2">Private Nonprofit</option>
+          <option value="3">For-Profit</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-state">State</label>
+        <select id="filter-state"><option value="">All States</option></select>
+      </div>
+      <div class="field">
+        <label for="filter-cbsa">CBSA</label>
+        <select id="filter-cbsa" style="min-width:220px"><option value="">All CBSAs</option></select>
+      </div>
+      <div class="field">
+        <label for="inst-input">Near school</label>
+        <div class="ac-wrap" style="min-width:240px">
+          <input type="text" id="inst-input" placeholder="Type a school name…" autocomplete="off" spellcheck="false">
+          <div id="inst-ac-dropdown" class="ac-dropdown" style="display:none"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="filter-radius">Within</label>
+        <select id="filter-radius">
+          <option value="25">25 mi</option>
+          <option value="50" selected>50 mi</option>
+          <option value="100">100 mi</option>
+          <option value="250">250 mi</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-msg" class="loading-msg" style="display:none">
+    <span class="spinner"></span>Loading IPEDS data…
+  </div>
+
+  <div id="welcome-msg" class="welcome">
+    <h2>Enter a CIP code above to see competing institutions and tuition pricing</h2>
+    <p><span id="year-welcome">IPEDS</span> · Completions · Institutional Directory · Cost of Attendance</p>
+  </div>
+
+  <div id="results-area" style="display:none">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="results-hdr">
+      <h2 id="results-title"></h2>
+      <button class="export-btn" id="export-btn">⬇ Export CSV</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-col="name" class="sortable">Institution <span class="sort-icon"></span></th>
+              <th data-col="state">Location</th>
+              <th data-col="distance" class="sortable num dist-col">Distance <span class="sort-icon"></span></th>
+              <th data-col="sector">Sector</th>
+              <th data-col="levels">Award Level(s)</th>
+              <th class="prog-col">Programs</th>
+              <th data-col="t1" class="sortable num">UG In-State <span class="sort-icon"></span></th>
+              <th data-col="t2" class="sortable num">UG Out-State <span class="sort-icon"></span></th>
+              <th data-col="t5" class="sortable num">Grad In-State <span class="sort-icon"></span></th>
+              <th data-col="t6" class="sortable num">Grad Out-State <span class="sort-icon"></span></th>
+              <th data-col="completions" class="sortable num">Completions <span class="sort-icon"></span></th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="empty-msg" class="empty-state" style="display:none">
+    No institutions found matching your filters.
+  </div>
+</main>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────────────────────
+const AWARD_LEVELS = {
+  1:  'Certificate (<1 yr)',
+  2:  'Certificate (1–2 yr)',
+  3:  "Associate's",
+  4:  'Certificate (2–4 yr)',
+  5:  "Bachelor's",
+  6:  'Post-Bacc Cert.',
+  7:  "Master's",
+  8:  "Post-Master's Cert.",
+  17: 'Doctoral (Research)',
+  18: 'Doctoral (Professional)',
+  19: 'Doctoral (Other)'
+};
+
+const SECTOR = {
+  1: { label: 'Public',            cls: 'badge-pub' },
+  2: { label: 'Private Nonprofit', cls: 'badge-np'  },
+  3: { label: 'For-Profit',        cls: 'badge-fp'  }
+};
+
+const CIP_SERIES = {
+  '01':'Agriculture & Related Sciences',     '03':'Natural Resources & Conservation',
+  '04':'Architecture & Design',              '05':'Area, Ethnic & Gender Studies',
+  '09':'Communication & Journalism',         '10':'Communications Technologies',
+  '11':'Computer & Information Sciences',    '12':'Personal & Culinary Services',
+  '13':'Education',                          '14':'Engineering',
+  '15':'Engineering Technologies',           '16':'Foreign Languages',
+  '19':'Family & Consumer Sciences',         '22':'Legal Professions',
+  '23':'English Language & Literature',      '24':'Liberal Arts & General Studies',
+  '25':'Library Science',                    '26':'Biological & Biomedical Sciences',
+  '27':'Mathematics & Statistics',           '29':'Military Technologies',
+  '30':'Multi/Interdisciplinary Studies',    '31':'Parks, Recreation & Leisure',
+  '38':'Philosophy & Religious Studies',     '39':'Theology & Religious Vocations',
+  '40':'Physical Sciences',                  '41':'Science Technologies',
+  '42':'Psychology',                         '43':'Homeland Security & Law Enforcement',
+  '44':'Public Administration & Social Svcs','45':'Social Sciences',
+  '46':'Construction Trades',                '47':'Mechanic & Repair Technologies',
+  '48':'Precision Production',               '49':'Transportation',
+  '50':'Visual & Performing Arts',           '51':'Health Professions & Clinical Sciences',
+  '52':'Business, Management & Marketing',   '54':'History'
+};
+
+// ── Institution array layout (must match build_data.py) ─────────────────────
+const INST = {
+  NAME: 0, CITY: 1, STATE: 2, CONTROL: 3,
+  T1: 4, T2: 5, T5: 6, T6: 7,
+  CBSA: 8, LAT: 9, LNG: 10
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let DATA = null;
+let currentCips = [];   // array of selected CIP codes
+let currentRows = [];
+let sortCol = 'completions';
+let sortDir = -1;
+let acIdx = -1;
+let instAcIdx = -1;
+let centerInst = null;  // { uid, name, lat, lng } when a "Near school" filter is set
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  show('loading-msg'); hide('welcome-msg');
+  try {
+    const res = await fetch('data/ipeds_data.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    DATA = await res.json();
+    applyDataLabel();
+    hide('loading-msg'); show('welcome-msg');
+    populateStateAll();
+    populateCbsaAll();
+  } catch (e) {
+    el('loading-msg').innerHTML =
+      `<span style="color:#ef4444">&#9888; Failed to load data: ${e.message}.<br>
+       Run <code>python build_data.py</code> to generate <code>data/ipeds_data.json</code>.</span>`;
+  }
+}
+
+function applyDataLabel() {
+  const label = DATA && DATA.label ? DATA.label : 'IPEDS';
+  document.title = `CIP Code Competitor & Pricing Tool — ${label}`;
+  const badge = el('year-badge');   if (badge)   badge.textContent = label;
+  const welc  = el('year-welcome'); if (welc)    welc.textContent = label;
+}
+
+// ── Filter helpers ────────────────────────────────────────────────────────────
+function populateStateAll() {
+  const states = [...new Set(Object.values(DATA.inst).map(i => i[2]))].sort();
+  const sel = el('filter-state');
+  sel.innerHTML = '<option value="">All States</option>';
+  states.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s; sel.appendChild(o);
+  });
+}
+
+function populateCbsaAll() {
+  const codes = [...new Set(Object.values(DATA.inst).map(i => i[8]).filter(Boolean))];
+  const sel = el('filter-cbsa');
+  sel.innerHTML = '<option value="">All CBSAs</option>';
+  codes.sort((a, b) => cbsaLabel(a).localeCompare(cbsaLabel(b))).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = cbsaLabel(c); sel.appendChild(o);
+  });
+}
+
+function cbsaLabel(code) {
+  const name = DATA.cbsas && DATA.cbsas[code];
+  return name ? `${name} (${code})` : `CBSA ${code}`;
+}
+
+function updateFiltersForCips() {
+  const allRecords = currentCips.flatMap(q => expandQuery(q).flatMap(cip => DATA.comp[cip] || []));
+
+  // Award levels
+  const levels = [...new Set(allRecords.map(r => r[1]))].sort((a, b) => a - b);
+  const prevLvl = parseInt(el('filter-level').value) || null;
+  const selLvl = el('filter-level');
+  selLvl.innerHTML = '<option value="">All Award Levels</option>';
+  levels.forEach(l => {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = AWARD_LEVELS[l] || `Level ${l}`; selLvl.appendChild(o);
+  });
+  if (prevLvl && levels.includes(prevLvl)) selLvl.value = prevLvl;
+
+  // States
+  const stateSet = new Set();
+  allRecords.forEach(([uid]) => { const i = DATA.inst[String(uid)]; if (i) stateSet.add(i[2]); });
+  const prevSt = el('filter-state').value;
+  const selSt = el('filter-state');
+  selSt.innerHTML = '<option value="">All States</option>';
+  [...stateSet].sort().forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s; selSt.appendChild(o);
+  });
+  if ([...stateSet].includes(prevSt)) selSt.value = prevSt;
+
+  // CBSAs
+  const cbsaSet = new Set();
+  allRecords.forEach(([uid]) => { const i = DATA.inst[String(uid)]; if (i && i[8]) cbsaSet.add(i[8]); });
+  const prevCbsa = el('filter-cbsa').value;
+  const selCbsa = el('filter-cbsa');
+  selCbsa.innerHTML = '<option value="">All CBSAs</option>';
+  [...cbsaSet].sort((a, b) => cbsaLabel(a).localeCompare(cbsaLabel(b))).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = cbsaLabel(c); selCbsa.appendChild(o);
+  });
+  if ([...cbsaSet].includes(prevCbsa)) selCbsa.value = prevCbsa;
+}
+
+function resetFilters() {
+  el('filter-level').innerHTML = '<option value="">All Award Levels</option>';
+  el('filter-sector').value = '';
+  populateStateAll();
+  populateCbsaAll();
+}
+
+// ── CIP query helpers ─────────────────────────────────────────────────────────
+// Accepts: "11" (2-digit series), "11.01" (4-digit subcategory), "11.0101" (exact)
+function expandQuery(q) {
+  if (!DATA) return [];
+  if (/^\d{2}$/.test(q))       return DATA.cips.filter(c => c.startsWith(q + '.'));
+  if (/^\d{2}\.\d{2}$/.test(q)) return DATA.cips.filter(c => c.startsWith(q));
+  return DATA.comp[q] ? [q] : [];
+}
+
+function chipLabel(q) {
+  if (/^\d{2}$/.test(q))       return q + '.*';
+  if (/^\d{2}\.\d{2}$/.test(q)) return q + '*';
+  return q;
+}
+
+// ── Chip input ────────────────────────────────────────────────────────────────
+function addCip(q) {
+  q = q.trim();
+  if (!DATA || !q) return;
+  if (currentCips.includes(q)) { cipInput.value = ''; return; }
+  if (!expandQuery(q).length) {
+    cipInput.placeholder = `"${q}" — no matching programs`;
+    setTimeout(() => cipInput.placeholder = currentCips.length ? 'Add another CIP…' : 'Add CIP code…', 2000);
+    cipInput.value = '';
+    return;
+  }
+  currentCips.push(q);
+  cipInput.value = '';
+  renderChips();
+  updateFiltersForCips();
+  render();
+}
+
+function removeCip(cip) {
+  currentCips = currentCips.filter(c => c !== cip);
+  renderChips();
+  if (!currentCips.length) {
+    hide('results-area'); hide('empty-msg'); show('welcome-msg');
+    resetFilters();
+    return;
+  }
+  updateFiltersForCips();
+  render();
+}
+
+function renderChips() {
+  const acWrap = cipInput.closest('.ac-wrap');
+  const chipBox = el('chip-box');
+  chipBox.querySelectorAll('.chip').forEach(c => c.remove());
+  currentCips.forEach(q => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    const label = chipLabel(q);
+    chip.innerHTML = `${esc(label)}<button class="chip-x" aria-label="Remove ${esc(q)}">×</button>`;
+    chip.querySelector('.chip-x').addEventListener('click', () => removeCip(q));
+    chipBox.insertBefore(chip, acWrap);
+  });
+  cipInput.placeholder = currentCips.length ? 'Add another CIP…' : 'Add CIP code…';
+}
+
+// ── Autocomplete ──────────────────────────────────────────────────────────────
+const cipInput = el('cip-input');
+const acDrop = el('ac-dropdown');
+
+cipInput.addEventListener('input', onCipInput);
+cipInput.addEventListener('keydown', onCipKey);
+cipInput.addEventListener('blur', () => setTimeout(closeAc, 160));
+document.addEventListener('click', e => { if (!e.target.closest('.ac-wrap')) closeAc(); });
+
+function onCipInput() {
+  const q = cipInput.value.trim();
+  if (!DATA || !q) { closeAc(); return; }
+
+  const items = [];
+
+  // Series option: exactly 2 digits (e.g. "11")
+  if (/^\d{2}$/.test(q)) {
+    const hits = DATA.cips.filter(c => c.startsWith(q + '.'));
+    if (hits.length) {
+      const desc = CIP_SERIES[q] || '';
+      items.push({ group: true, value: q, code: q + '.*',
+        desc: (desc ? desc + ' — ' : '') + hits.length + ' programs' });
+    }
+  }
+
+  // Subcategory option: exactly XX.XX digits (e.g. "11.01")
+  if (/^\d{2}\.\d{2}$/.test(q)) {
+    const hits = DATA.cips.filter(c => c.startsWith(q));
+    if (hits.length) {
+      const series = q.split('.')[0];
+      const desc = CIP_SERIES[series] || '';
+      items.push({ group: true, value: q, code: q + '*',
+        desc: (desc ? desc + ' subcategory — ' : '') + hits.length + ' programs' });
+    }
+  }
+
+  // Individual 6-digit code matches
+  DATA.cips.filter(c => c.startsWith(q)).slice(0, 55).forEach((c, i) => {
+    const series = c.split('.')[0].padStart(2, '0');
+    items.push({ group: false, value: c, code: c, desc: CIP_SERIES[series] || '' });
+  });
+
+  if (!items.length) {
+    acDrop.innerHTML = '<div class="ac-hint">No matching CIP codes</div>';
+  } else {
+    acDrop.innerHTML = items.map((item, i) => {
+      const already = currentCips.includes(item.value) ? ' style="opacity:.4"' : '';
+      const grp = item.group ? ' ac-group' : '';
+      return `<div class="ac-item${grp}" data-cip="${esc(item.value)}" data-i="${i}"${already}>
+        <span class="ac-code">${esc(item.code)}</span>
+        <span class="ac-series">${esc(item.desc)}</span>
+      </div>`;
+    }).join('');
+    acDrop.querySelectorAll('.ac-item').forEach(item =>
+      item.addEventListener('mousedown', e => { e.preventDefault(); selectCip(item.dataset.cip); })
+    );
+  }
+  acDrop.style.display = 'block';
+  acIdx = -1;
+}
+
+function onCipKey(e) {
+  const items = acDrop.querySelectorAll('.ac-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acIdx = Math.min(acIdx + 1, items.length - 1);
+    highlightAc(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acIdx = Math.max(acIdx - 1, -1);
+    highlightAc(items);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (acIdx >= 0 && items[acIdx]) { selectCip(items[acIdx].dataset.cip); }
+    else { closeAc(); addCip(cipInput.value.trim()); }
+  } else if (e.key === 'Escape') {
+    closeAc();
+  }
+}
+
+function highlightAc(items) {
+  items.forEach((it, i) => it.classList.toggle('active', i === acIdx));
+  if (acIdx >= 0) items[acIdx].scrollIntoView({ block: 'nearest' });
+}
+
+function closeAc() { acDrop.style.display = 'none'; acIdx = -1; }
+
+function selectCip(cip) {
+  closeAc();
+  addCip(cip);
+}
+
+// ── Distance + "Near school" filter ───────────────────────────────────────────
+function distMiles(lat1, lng1, lat2, lng2) {
+  if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return null;
+  const R = 3958.7613; // Earth radius in miles
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+const instInput   = el('inst-input');
+const instAcDrop  = el('inst-ac-dropdown');
+
+instInput.addEventListener('input', onInstInput);
+instInput.addEventListener('keydown', onInstKey);
+instInput.addEventListener('blur', () => setTimeout(closeInstAc, 160));
+document.addEventListener('click', e => { if (!e.target.closest('#inst-input')?.parentElement) closeInstAc(); });
+
+function onInstInput() {
+  const q = instInput.value.trim().toLowerCase();
+  if (!DATA || q.length < 2) { closeInstAc(); return; }
+
+  const matches = [];
+  const entries = Object.entries(DATA.inst);
+  for (const [uid, inst] of entries) {
+    const name = inst[INST.NAME];
+    if (!name || inst[INST.LAT] == null || inst[INST.LNG] == null) continue;
+    if (name.toLowerCase().includes(q)) {
+      matches.push({ uid, name, city: inst[INST.CITY], state: inst[INST.STATE] });
+      if (matches.length >= 60) break;
+    }
+  }
+
+  if (!matches.length) {
+    instAcDrop.innerHTML = '<div class="ac-hint">No matching schools (with coordinates)</div>';
+  } else {
+    instAcDrop.innerHTML = matches.map((m, i) =>
+      `<div class="ac-item" data-uid="${esc(m.uid)}" data-i="${i}">
+         <span class="ac-code">${esc(m.name)}</span>
+         <span class="ac-series">${esc(m.city)}, ${esc(m.state)}</span>
+       </div>`).join('');
+    instAcDrop.querySelectorAll('.ac-item').forEach(item =>
+      item.addEventListener('mousedown', e => { e.preventDefault(); selectInst(item.dataset.uid); })
+    );
+  }
+  instAcDrop.style.display = 'block';
+  instAcIdx = -1;
+}
+
+function onInstKey(e) {
+  const items = instAcDrop.querySelectorAll('.ac-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    instAcIdx = Math.min(instAcIdx + 1, items.length - 1);
+    items.forEach((it, i) => it.classList.toggle('active', i === instAcIdx));
+    if (instAcIdx >= 0) items[instAcIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    instAcIdx = Math.max(instAcIdx - 1, -1);
+    items.forEach((it, i) => it.classList.toggle('active', i === instAcIdx));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (instAcIdx >= 0 && items[instAcIdx]) selectInst(items[instAcIdx].dataset.uid);
+  } else if (e.key === 'Escape') {
+    closeInstAc();
+  }
+}
+
+function closeInstAc() { instAcDrop.style.display = 'none'; instAcIdx = -1; }
+
+function selectInst(uid) {
+  const inst = DATA.inst[uid];
+  if (!inst) return;
+  centerInst = {
+    uid,
+    name: inst[INST.NAME],
+    lat:  inst[INST.LAT],
+    lng:  inst[INST.LNG],
+  };
+  instInput.value = `${centerInst.name} (clear ×)`;
+  closeInstAc();
+  if (currentCips.length) render();
+}
+
+instInput.addEventListener('focus', () => {
+  // Clicking on the field while a center is selected clears it
+  if (centerInst) {
+    centerInst = null;
+    instInput.value = '';
+    if (currentCips.length) render();
+  }
+});
+
+el('filter-radius').addEventListener('change', () => {
+  if (centerInst && currentCips.length) render();
+});
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  if (!DATA || !currentCips.length) return;
+
+  const lvlFilter  = parseInt(el('filter-level').value)  || null;
+  const secFilter  = parseInt(el('filter-sector').value) || null;
+  const stFilter   = el('filter-state').value || null;
+  const cbsaFilter = el('filter-cbsa').value  || null;
+
+  // Aggregate by institution — expand each query (series/subcat/exact) to its 6-digit codes
+  const byInst = {};
+  for (const query of currentCips) {
+    const qLabel = chipLabel(query);
+    for (const cip of expandQuery(query)) {
+      for (const [uid, level, count] of DATA.comp[cip] || []) {
+        if (lvlFilter !== null && level !== lvlFilter) continue;
+        const key = String(uid);
+        if (!byInst[key]) byInst[key] = { levels: new Set(), queries: new Set(), completions: 0 };
+        byInst[key].levels.add(level);
+        byInst[key].queries.add(qLabel);
+        byInst[key].completions += count;
+      }
+    }
+  }
+
+  const radiusMi = centerInst ? parseFloat(el('filter-radius').value) : null;
+
+  const rows = [];
+  for (const [uid, agg] of Object.entries(byInst)) {
+    const inst = DATA.inst[uid];
+    if (!inst) continue;
+    const [name, city, state, control, t1, t2, t5, t6, cbsa, lat, lng] = inst;
+    if (secFilter  !== null && control !== secFilter)  continue;
+    if (stFilter   !== null && state   !== stFilter)   continue;
+    if (cbsaFilter !== null && cbsa    !== cbsaFilter) continue;
+
+    let distance = null;
+    if (centerInst) {
+      distance = distMiles(centerInst.lat, centerInst.lng, lat, lng);
+      if (distance == null || distance > radiusMi) continue;
+    }
+
+    rows.push({
+      uid, name, city, state, cbsa, sector: control,
+      levels:  [...agg.levels].sort((a, b) => a - b),
+      queries: [...agg.queries].sort(),
+      completions: agg.completions,
+      t1, t2, t5, t6, distance
+    });
+  }
+
+  if (!rows.length) { showEmpty('No institutions found matching your filters.'); return; }
+
+  rows.sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    const nullVal = sortDir === 1 ? Infinity : -Infinity;
+    if (va == null) va = nullVal;
+    if (vb == null) vb = nullVal;
+    if (typeof va === 'string') return sortDir * va.localeCompare(vb);
+    return sortDir * (va - vb);
+  });
+
+  currentRows = rows;
+  hide('welcome-msg'); hide('empty-msg'); show('results-area');
+  renderStats(rows);
+  renderTable(rows);
+
+  const multi = currentCips.length > 1;
+  const lvlLabel = lvlFilter ? ` · ${AWARD_LEVELS[lvlFilter] || 'Level ' + lvlFilter}` : '';
+  const labels = currentCips.map(chipLabel);
+  const cipLabel = multi
+    ? `${currentCips.length} searches (${labels.slice(0, 3).join(', ')}${labels.length > 3 ? ', …' : ''})`
+    : `CIP ${labels[0]}`;
+  const nearLabel = centerInst ? ` · within ${radiusMi} mi of ${centerInst.name}` : '';
+  el('results-title').textContent =
+    `${rows.length.toLocaleString()} institution${rows.length !== 1 ? 's' : ''} — ${cipLabel}${lvlLabel}${nearLabel}`;
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function renderStats(rows) {
+  const ugVals   = rows.map(r => r.t1).filter(v => v != null);
+  const gradVals = rows.map(r => r.t5).filter(v => v != null);
+  const totalComp = rows.reduce((s, r) => s + r.completions, 0);
+
+  const avg = arr => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+  const fmtAvg = v => v != null ? '$' + v.toLocaleString() : '—';
+  const ugAvg = avg(ugVals);
+  const ugMin = ugVals.length ? Math.min(...ugVals) : null;
+  const ugMax = ugVals.length ? Math.max(...ugVals) : null;
+  const gradAvg = avg(gradVals);
+  const rangeStr = ugMin != null ? `$${ugMin.toLocaleString()} – $${ugMax.toLocaleString()}` : '—';
+
+  el('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${rows.length.toLocaleString()}</div><div class="stat-lbl">Institutions</div></div>
+    <div class="stat-card"><div class="stat-val">${fmtAvg(ugAvg)}</div><div class="stat-lbl">Avg UG In-State</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:1rem;letter-spacing:-.01em">${rangeStr}</div><div class="stat-lbl">UG In-State Range</div></div>
+    <div class="stat-card"><div class="stat-val">${fmtAvg(gradAvg)}</div><div class="stat-lbl">Avg Grad In-State</div></div>
+    <div class="stat-card"><div class="stat-val">${totalComp.toLocaleString()}</div><div class="stat-lbl">Total Completions</div></div>`;
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+function renderTable(rows) {
+  const multi = currentCips.length > 1;
+  const showDist = !!centerInst;
+  document.querySelectorAll('.prog-col').forEach(c => c.style.display = multi ? '' : 'none');
+  document.querySelectorAll('.dist-col').forEach(c => c.style.display = showDist ? '' : 'none');
+
+  el('results-body').innerHTML = rows.map(r => {
+    const sec = SECTOR[r.sector] || { label: 'Other', cls: 'badge-unk' };
+    const lvlBadges = r.levels.map(l =>
+      `<span class="badge badge-lvl">${AWARD_LEVELS[l] || 'Level ' + l}</span>`).join('');
+    const cipBadges = r.queries.map(q =>
+      `<span class="badge badge-cip">${esc(q)}</span>`).join('');
+    const distCell = showDist
+      ? `<td class="num dist-col">${r.distance != null ? r.distance.toFixed(1) + ' mi' : '—'}</td>`
+      : '';
+    return `<tr>
+      <td><div class="inst-name">${esc(r.name)}</div></td>
+      <td><span class="loc-text">${esc(r.city)}, ${esc(r.state)}</span></td>
+      ${distCell}
+      <td><span class="badge ${sec.cls}">${sec.label}</span></td>
+      <td class="levels-td">${lvlBadges}</td>
+      <td class="prog-col">${cipBadges}</td>
+      <td class="num">${fmtDollar(r.t1)}</td>
+      <td class="num">${fmtDollar(r.t2)}</td>
+      <td class="num">${fmtDollar(r.t5)}</td>
+      <td class="num">${fmtDollar(r.t6)}</td>
+      <td class="num">${r.completions.toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Sorting ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('thead th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) { sortDir *= -1; }
+    else { sortCol = col; sortDir = col === 'name' ? 1 : -1; }
+    document.querySelectorAll('thead th').forEach(t => t.classList.remove('sort-asc', 'sort-desc'));
+    th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+    render();
+  });
+});
+document.querySelector('thead th[data-col="completions"]').classList.add('sort-desc');
+
+// ── Export CSV ────────────────────────────────────────────────────────────────
+el('export-btn').addEventListener('click', () => {
+  if (!currentRows.length) return;
+  const multi = currentCips.length > 1;
+  const showDist = !!centerInst;
+  const headers = [
+    'UNITID','Institution','City','State','CBSA','Sector',
+    ...(showDist ? ['Distance (mi)'] : []),
+    ...(multi ? ['CIP Code(s)'] : []),
+    'Award Level(s)',
+    'UG In-State Tuition','UG Out-of-State Tuition',
+    'Grad In-State Tuition','Grad Out-of-State Tuition','Completions'
+  ];
+  const csvRows = currentRows.map(r => {
+    const secLabel = SECTOR[r.sector]?.label || r.sector || '';
+    const lvlStr = r.levels.map(l => AWARD_LEVELS[l] || `Level ${l}`).join('; ');
+    const cbsaStr = r.cbsa ? cbsaLabel(r.cbsa) : '';
+    return [
+      r.uid, r.name, r.city, r.state, cbsaStr, secLabel,
+      ...(showDist ? [r.distance != null ? r.distance.toFixed(1) : ''] : []),
+      ...(multi ? [r.queries.join('; ')] : []),
+      lvlStr, r.t1 ?? '', r.t2 ?? '', r.t5 ?? '', r.t6 ?? '', r.completions
+    ];
+  });
+  const csv = [headers, ...csvRows].map(row =>
+    row.map(v => {
+      const s = String(v ?? '');
+      return (s.includes(',') || s.includes('"') || s.includes('\n'))
+        ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',')
+  ).join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const yearTag = (DATA && DATA.year) ? `ipeds${DATA.year}` : 'ipeds';
+  const fname = currentCips.length === 1
+    ? `cip_${currentCips[0].replace('.', '_')}_competitors_${yearTag}.csv`
+    : `cip_multi${currentCips.length}_competitors_${yearTag}.csv`;
+  const a = Object.assign(document.createElement('a'), { href: url, download: fname });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+// ── Filter change listeners ───────────────────────────────────────────────────
+['filter-level', 'filter-sector', 'filter-state', 'filter-cbsa'].forEach(id =>
+  el(id).addEventListener('change', render)
+);
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function show(id) { el(id).style.display = ''; }
+function hide(id) { el(id).style.display = 'none'; }
+
+function showEmpty(msg) {
+  hide('results-area'); hide('welcome-msg');
+  el('empty-msg').textContent = msg || 'No institutions found matching your filters.';
+  show('empty-msg');
+}
+
+function fmtDollar(v) {
+  return v != null ? '$' + Number(v).toLocaleString() : '<span class="null-val">—</span>';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
